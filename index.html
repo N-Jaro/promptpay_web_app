@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptPay QR Generator App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-gray-100 dark:bg-gray-900 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8">
+
+        <!-- Home View / Main Menu -->
+        <div id="homeView" class="view">
+            <div class="text-center mb-10">
+                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white">PromptPay QR</h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-3">เลือกเมนูที่ต้องการ</p>
+            </div>
+            <div class="space-y-5">
+                <button id="showGeneratorWithAmount"
+                    class="menu-button w-full text-left p-6 bg-blue-500 text-white rounded-xl">
+                    <h2 class="font-bold text-lg">สร้าง QR สำหรับจ่ายเงิน</h2>
+                    <p class="text-sm opacity-90">สำหรับผู้ซื้อ สร้าง QR พร้อมจำนวนเงินที่กำหนด</p>
+                </button>
+                <button id="showGeneratorWithoutAmount"
+                    class="menu-button w-full text-left p-6 bg-green-500 text-white rounded-xl">
+                    <h2 class="font-bold text-lg">สร้าง QR สำหรับรับเงิน</h2>
+                    <p class="text-sm opacity-90">สำหรับผู้ขาย/รับบริจาค ผู้จ่ายเป็นคนระบุจำนวนเงินเอง</p>
+                </button>
+                <button id="showSplitBill" class="menu-button w-full text-left p-6 bg-purple-500 text-white rounded-xl">
+                    <h2 class="font-bold text-lg">หารค่าข้าว (Split Bill)</h2>
+                    <p class="text-sm opacity-90">สำหรับกลุ่มเพื่อน คำนวณและสร้าง QR สำหรับแต่ละคน</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- QR Generator View (for single payments) -->
+        <div id="generatorView" class="view hidden">
+            <div class="flex items-center mb-8">
+                <button class="back-button p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-4">
+                    <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                        </path>
+                    </svg>
+                </button>
+                <h1 id="generatorTitle" class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white"></h1>
+            </div>
+            <!-- Form and QR display will be populated by JS from template -->
+        </div>
+
+        <!-- Bill Splitter View -->
+        <div id="splitBillView" class="view hidden">
+            <div class="flex items-center mb-8">
+                <button class="back-button p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 mr-4">
+                    <svg class="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                        </path>
+                    </svg>
+                </button>
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">หารค่าข้าว (Split Bill)</h1>
+            </div>
+            <form id="splitBillForm" class="space-y-6">
+                <div>
+                    <label for="myPromptpayId"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PromptPay ของคุณ
+                        (สำหรับรับเงิน)</label>
+                    <input type="text" id="myPromptpayId"
+                        class="form-input w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
+                        placeholder="เบอร์โทรศัพท์ 10 หลัก หรือ เลขบัตรประชาชน 13 หลัก" required>
+                </div>
+                <div>
+                    <label for="totalAmount"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ยอดรวมทั้งหมด
+                        (บาท)</label>
+                    <input type="number" id="totalAmount" min="0.01" step="0.01"
+                        class="form-input w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
+                        placeholder="เช่น 1000.00" required>
+                </div>
+                <div>
+                    <label for="numPeople"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำนวนคน
+                        (รวมตัวคุณ)</label>
+                    <input type="number" id="numPeople" min="2" step="1"
+                        class="form-input w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg"
+                        placeholder="เช่น 4" required>
+                </div>
+                <button type="submit"
+                    class="w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-4 focus:ring-purple-300">
+                    คำนวณและสร้าง QR
+                </button>
+            </form>
+            <div id="splitQrCodeContainer" class="mt-8 text-center flex-col items-center justify-center hidden">
+                <p id="splitResultText" class="text-lg font-semibold text-gray-800 dark:text-white mb-4"></p>
+                <div id="splitQrcode" class="qrcode-display p-4 bg-white rounded-lg shadow-inner inline-block"></div>
+                <button id="splitDownloadBtn"
+                    class="download-btn mt-6 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700">ดาวน์โหลด
+                    QR Code</button>
+            </div>
+            <div id="split-error-message" class="mt-4 text-center text-red-500 font-medium hidden"></div>
+        </div>
+
+        <!-- Common QR Display and Form Template (will be cloned) -->
+        <template id="generator-template">
+            <form id="qrForm" class="space-y-6">
+                <div>
+                    <label for="promptpayId"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">PromptPay ID</label>
+                    <input type="text" id="promptpayId" name="promptpayId"
+                        class="form-input w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                        placeholder="เบอร์โทรศัพท์ 10 หลัก หรือ เลขบัตรประชาชน 13 หลัก" required>
+                </div>
+                <div id="amountField">
+                    <label for="amount"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำนวนเงิน (บาท)</label>
+                    <input type="number" id="amount" name="amount" min="0.01" step="0.01"
+                        class="form-input w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
+                        placeholder="เช่น 150.50">
+                </div>
+                <button type="submit"
+                    class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    สร้าง QR Code
+                </button>
+            </form>
+
+            <div id="qrCodeContainer" class="mt-8 text-center flex-col items-center justify-center hidden">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">สแกนเพื่อจ่ายเงิน</h2>
+                <div class="qrcode-display p-4 bg-white rounded-lg shadow-inner inline-block"></div>
+                <p class="qr-amount-text mt-2 text-lg font-medium text-gray-600 dark:text-gray-300"></p>
+                <button
+                    class="download-btn mt-6 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700">
+                    ดาวน์โหลด QR Code
+                </button>
+            </div>
+            <div class="error-message mt-4 text-center text-red-500 font-medium hidden"></div>
+        </template>
+    </div>
+
+    <!-- External and Local Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script type="module" src="js/app.js" defer></script>
+</body>
+
+</html>
