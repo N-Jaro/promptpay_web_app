@@ -51,20 +51,30 @@ class PromptPayQR {
      * @returns {string|null} - The QR payload string or null if invalid input.
      */
     static genText(acc_id, amount) {
+        // Input validation
+        if (typeof acc_id !== 'string' || acc_id.trim() === '') return null;
+        acc_id = acc_id.trim();
+        // Accept only 10-digit phone, 13-digit national ID, or 15-digit e-wallet
+        if (!/^(\d{10}|\d{13}|\d{15})$/.test(acc_id)) return null;
         let pp_acc_id = '';
         let pp_amount = '';
         let pp_chksum = '';
-        if (!acc_id) return null;
         if (/^\d{15}$/.test(acc_id)) pp_acc_id = '0315' + acc_id;
         else if (/^\d{13}$/.test(acc_id)) pp_acc_id = '0213' + acc_id;
         else if (/^\d{10}$/.test(acc_id)) pp_acc_id = '01130066' + acc_id.substr(1);
         else return null;
-        if (amount) {
-            amount = parseFloat(amount).toFixed(2);
+        if (amount !== undefined && amount !== null && amount !== '') {
+            // Accept only positive numbers, up to 2 decimal places
+            if (isNaN(amount)) return null;
+            amount = parseFloat(amount);
+            if (!(amount > 0)) return null;
+            // Only allow up to 2 decimal places
+            if (!/^\d+(\.\d{1,2})?$/.test(String(amount))) return null;
+            amount = amount.toFixed(2);
             pp_amount = '54' + ('00' + amount.length).slice(-2) + amount;
         }
         const field_29 = '0016A000000677010111' + pp_acc_id;
-        let pp_str = '000201' + (amount ? '010212' : '010211') + '29' + ('00' + field_29.length).slice(-2) + field_29 + '5802TH' + pp_amount + '5303764' + '6304';
+        let pp_str = '000201' + (pp_amount ? '010212' : '010211') + '29' + ('00' + field_29.length).slice(-2) + field_29 + '5802TH' + pp_amount + '5303764' + '6304';
         pp_chksum = this.checksum(pp_str);
         pp_str += pp_chksum;
         return pp_str;

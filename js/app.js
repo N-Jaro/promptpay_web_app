@@ -4,7 +4,7 @@
  *
  * Depends on: PromptPayQR (js/PromptPayQR.js), QRCode.js (external)
  */
-import PromptPayQR from './js/PromptPayQR.js';
+import PromptPayQR from './PromptPayQR.js';
 
 // Store QRCode instances for each view
 const qrCodeInstances = {};
