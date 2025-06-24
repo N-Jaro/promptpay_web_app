@@ -8,6 +8,7 @@ import PromptPayQR from './PromptPayQR.js';
 
 // Store QRCode instances for each view
 const qrCodeInstances = {};
+const API_BASE = "/promptpay_web_app/backend/public/api";
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- View Elements ---
@@ -77,6 +78,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             generateQRCode(qrInstanceKey, qrCodeContainer, payload, amountInput);
+
+            // Save transaction if user is logged in and amount is specified
+            fetch(`${API_BASE}/user`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.logged_in && amountInput) {
+                        fetch(`${API_BASE}/transactions`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                amount: amountInput,
+                                description: `PromptPay QR generated for ${promptpayIdInput}`
+                            })
+                        });
+                    }
+                });
         });
     }
 
@@ -141,6 +158,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         document.getElementById('splitResultText').textContent = `จ่ายคนละ: ${amountPerPerson.toFixed(2)} บาท`;
         generateQRCode('split', qrContainer, payload, amountPerPerson);
+
+        // Save transaction if user is logged in
+        fetch(`${API_BASE}/user`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.logged_in) {
+                    fetch(`${API_BASE}/transactions`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            amount: amountPerPerson,
+                            description: `Split bill QR generated for ${myId} (${people} people, total ฿${total.toFixed(2)})`
+                        })
+                    });
+                }
+            });
     });
 
     // --- Navigation Event Listeners ---
@@ -162,5 +195,96 @@ document.addEventListener('DOMContentLoaded', () => {
             qrContainer.classList.add('hidden');
             qrContainer.classList.remove('flex');
         }
+    }
+
+    // Google login button logic (now in top nav)
+    const googleLoginDiv = document.getElementById('topNavLogin');
+    if (googleLoginDiv) {
+        fetch(`${API_BASE}/user`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.logged_in) {
+                    googleLoginDiv.innerHTML = `
+                        <div class="relative group">
+                            <button id="userMenuBtn" class="flex items-center space-x-2 focus:outline-none">
+                                <img src="${data.user.avatar || 'https://www.gravatar.com/avatar/?d=mp'}" class="w-8 h-8 rounded-full" alt="User Avatar">
+                                <span class="font-semibold text-gray-800 dark:text-white">${data.user.name}</span>
+                                <svg class="w-4 h-4 text-gray-600 dark:text-gray-300 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="userMenu" class="hidden absolute right-0 mt-2 w-40 bg-white dark:bg-gray-700 rounded shadow-lg py-2 z-50 border border-gray-200 dark:border-gray-600">
+                                <a href="#" id="historyLink" class="block w-full text-left px-4 py-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Transaction History</a>
+                                <button id="logoutBtn" class="block w-full text-left px-4 py-2 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600">Logout</button>
+                            </div>
+                        </div>
+                    `;
+                    const userMenuBtn = document.getElementById('userMenuBtn');
+                    const userMenu = document.getElementById('userMenu');
+                    userMenuBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        userMenu.classList.toggle('hidden');
+                    });
+                    document.addEventListener('click', (e) => {
+                        if (!userMenu.classList.contains('hidden')) {
+                            userMenu.classList.add('hidden');
+                        }
+                    });
+                    document.getElementById('logoutBtn').addEventListener('click', () => {
+                        fetch('/promptpay_web_app/backend/public/auth/logout.php')
+                            .then(() => location.reload());
+                    });
+                    document.getElementById('historyLink').addEventListener('click', (e) => {
+                        e.preventDefault();
+                        showView('historyView');
+                        userMenu.classList.add('hidden');
+                        loadTransactionHistory();
+                    });
+                } else {
+                    googleLoginDiv.innerHTML = `
+                        <a href="/promptpay_web_app/backend/public/auth/google"
+                            class="inline-flex items-center px-4 py-2 bg-red-500 text-white font-bold rounded-lg shadow hover:bg-red-600 transition">
+                            <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google Logo" class="w-5 h-5 mr-2">
+                            Login with Google
+                        </a>
+                    `;
+                }
+            });
+    }
+
+    // Add this function at the end of DOMContentLoaded
+    function loadTransactionHistory() {
+        const historyView = document.getElementById('historyView');
+        if (!historyView) return;
+        historyView.innerHTML = '<div class="text-center text-lg text-gray-700 dark:text-white py-8">Loading...</div>';
+        fetch(`${API_BASE}/transactions`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && Array.isArray(data.transactions)) {
+                    if (data.transactions.length === 0) {
+                        historyView.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-300 py-8">No transactions found.</div>';
+                        return;
+                    }
+                    historyView.innerHTML = `
+                        <button id="backToHomeBtn" class="mb-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-300 dark:hover:bg-gray-600">&larr; Back</button>
+                        <h2 class="text-2xl font-bold mb-4 text-center text-gray-800 dark:text-white">Transaction History</h2>
+                        <div class="space-y-4">
+                            ${data.transactions.map(tx => `
+                                <div class="p-4 bg-gray-100 dark:bg-gray-800 rounded shadow flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <div class="font-semibold text-gray-800 dark:text-white">฿${parseFloat(tx.amount).toFixed(2)}</div>
+                                        <div class="text-gray-500 dark:text-gray-300 text-sm">${tx.description || ''}</div>
+                                    </div>
+                                    <div class="text-gray-400 text-xs mt-2 sm:mt-0">${new Date(tx.created_at).toLocaleString()}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    document.getElementById('backToHomeBtn').addEventListener('click', () => showView('homeView'));
+                } else {
+                    historyView.innerHTML = '<div class="text-center text-red-500 py-8">Failed to load transactions.</div>';
+                }
+            })
+            .catch(() => {
+                historyView.innerHTML = '<div class="text-center text-red-500 py-8">Failed to load transactions.</div>';
+            });
     }
 });

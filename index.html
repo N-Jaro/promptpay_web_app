@@ -32,14 +32,25 @@
     <meta name="twitter:image" content="img/promptpay_qr.png" />
 </head>
 
-<body class="bg-gray-100 dark:bg-gray-900 flex items-center justify-center min-h-screen p-4">
-
-    <div class="w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8">
+<body class="bg-gray-100 dark:bg-gray-900 min-h-screen">
+    <!-- Sticky Top Navigation Bar -->
+    <nav class="sticky top-0 z-50 bg-white/90 dark:bg-gray-800/90 shadow flex items-center justify-between px-6 py-4">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">PromptPay QR</h1>
+        <div id="topNavLogin" class="flex items-center space-x-2">
+            <!-- Google Login Button -->
+            <a href="/promptpay_web_app/backend/public/auth/google"
+                class="inline-flex items-center px-4 py-2 bg-red-500 text-white font-bold rounded-lg shadow hover:bg-red-600 transition">
+                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google Logo"
+                    class="w-5 h-5 mr-2">
+                Login with Google
+            </a>
+        </div>
+    </nav>
+    <div class="w-full max-w-md mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 mt-8">
 
         <!-- Home View / Main Menu -->
         <div id="homeView" class="view">
             <div class="text-center mb-10">
-                <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-white">PromptPay QR</h1>
                 <p class="text-gray-500 dark:text-gray-400 mt-3">เลือกเมนูที่ต้องการ</p>
             </div>
             <div class="space-y-5">
@@ -126,6 +137,11 @@
                     QR Code</button>
             </div>
             <div id="split-error-message" class="mt-4 text-center text-red-500 font-medium hidden"></div>
+        </div>
+
+        <!-- Transaction History View -->
+        <div id="historyView" class="view hidden">
+            <!-- Content will be loaded by JS -->
         </div>
 
         <!-- Common QR Display and Form Template (will be cloned) -->
